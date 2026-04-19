@@ -72,16 +72,14 @@ def get_presigned_url(request: PresignedRequest):
 
 @app.post("/api/orders", response_model=Order)
 def create_order(
-    request: Request,
     order_in: OrderCreate, 
     background_tasks: BackgroundTasks, 
+    client: ClientUser = Depends(get_current_client),
     session: Session = Depends(get_session)
 ):
     try:
         order = Order.model_validate(order_in)
-        client = get_optional_client(request, session)
-        if client:
-            order.client_id = client.id
+        order.client_id = client.id
         session.add(order)
         session.commit()
         session.refresh(order)
@@ -182,7 +180,4 @@ def list_client_orders(client: ClientUser = Depends(get_current_client), session
     statement = select(Order).where(Order.client_id == client.id).order_by(Order.created_at.desc())
     return session.exec(statement).all()
 
-@app.get("/client")
-def serve_client():
-    with open("frontend/client.html", "r", encoding="utf-8") as f:
-        return HTMLResponse(content=f.read())
+

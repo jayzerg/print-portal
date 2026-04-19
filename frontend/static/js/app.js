@@ -4,18 +4,155 @@ const API_BASE_URL = '/api';
 // Utilities
 const showStatus = (elementId, message, isError = false) => {
     const el = document.getElementById(elementId);
+    if (!el) return;
     el.textContent = message;
-    el.className = isError ? 'status-error' : 'status-success';
+    el.className = isError ? 'status-message status-error' : 'status-message status-success';
     el.classList.remove('hidden');
 };
 
 const hideStatus = (elementId) => {
     const el = document.getElementById(elementId);
+    if (!el) return;
     el.classList.add('hidden');
-    el.className = '';
+    el.className = 'status-message';
 };
 
-// Main Form Logic
+// =======================
+// CLIENT AUTH & DASHBOARD
+// =======================
+let currentMode = 'login';
+
+window.onload = () => {
+    const token = localStorage.getItem('client_token');
+    const authView = document.getElementById('auth-view');
+    if (authView) {
+        if (token) {
+            showDashboard();
+        } else {
+            authView.style.display = 'block';
+        }
+    }
+    
+    // Auto-init admin if it exists
+    if (document.getElementById('orders-tbody')) {
+        initAdminDashboard();
+    }
+};
+
+window.switchAuth = (mode) => {
+    currentMode = mode;
+    const tabs = document.querySelectorAll('.tab');
+    if(tabs.length === 0) return;
+    tabs[0].classList.toggle('active', mode === 'login');
+    tabs[1].classList.toggle('active', mode === 'register');
+    document.getElementById('auth-btn').textContent = mode === 'login' ? 'Login' : 'Register';
+    hideStatus('auth-status');
+};
+
+const authForm = document.getElementById('auth-form');
+if (authForm) {
+    authForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const username = document.getElementById('username').value;
+        const password = document.getElementById('password').value;
+        const submitBtn = document.getElementById('auth-btn');
+        submitBtn.disabled = true;
+        
+        try {
+            if (currentMode === 'register') {
+                const res = await fetch(`${API_BASE_URL}/auth/register`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+                if (!res.ok) throw new Error((await res.json()).detail);
+                showStatus('auth-status', "Registered successfully! Please login.", false);
+                switchAuth('login');
+            } else {
+                const formData = new URLSearchParams();
+                formData.append('username', username);
+                formData.append('password', password);
+                
+                const res = await fetch(`${API_BASE_URL}/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: formData
+                });
+                if (!res.ok) throw new Error("Invalid username or password");
+                
+                const data = await res.json();
+                localStorage.setItem('client_token', data.access_token);
+                showDashboard();
+            }
+        } catch (err) {
+            showStatus('auth-status', err.message, true);
+        } finally {
+            submitBtn.disabled = false;
+        }
+    });
+}
+
+window.logout = () => {
+    localStorage.removeItem('client_token');
+    document.getElementById('auth-view').style.display = 'block';
+    document.getElementById('dashboard-view').style.display = 'none';
+    document.getElementById('top-nav').style.display = 'none';
+};
+
+window.showDashboard = () => {
+    document.getElementById('auth-view').style.display = 'none';
+    const authForm = document.getElementById('auth-form');
+    if(authForm) authForm.reset();
+
+    const dView = document.getElementById('dashboard-view');
+    const tNav = document.getElementById('top-nav');
+    if (dView) dView.style.display = 'block';
+    if (tNav) tNav.style.display = 'block';
+    
+    fetchOrders(); // Load client's orders
+};
+
+window.fetchOrders = async () => {
+    const tbody = document.getElementById('client-orders-tbody');
+    if (!tbody) return;
+    
+    const token = localStorage.getItem('client_token');
+    try {
+        const res = await fetch(`${API_BASE_URL}/client/orders`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        
+        if (res.status === 401) {
+            logout();
+            return;
+        }
+        if (!res.ok) throw new Error('Failed to fetch');
+        
+        const orders = await res.json();
+        if (orders.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="4" style="text-align: center">No orders yet. Start printing!</td></tr>';
+            return;
+        }
+        
+        tbody.innerHTML = orders.map(o => `
+            <tr>
+                <td><small>${o.id.substring(0, 8)}</small></td>
+                <td>
+                    ${o.file_name}<br>
+                    <small>${o.copies}x ${o.paper_size} (${o.color_mode})</small>
+                </td>
+                <td>${new Date(o.created_at).toLocaleDateString()}</td>
+                <td><span class="badge badge-${o.status}">${o.status}</span></td>
+            </tr>
+        `).join('');
+    } catch (err) {
+        tbody.innerHTML = '<tr><td colspan="4" class="status-error text-center">Failed to load orders</td></tr>';
+    }
+};
+
+// =======================
+// CLIENT ORDER UPLOAD LOGIC
+// =======================
 const uploadForm = document.getElementById('uploadForm');
 if (uploadForm) {
     uploadForm.addEventListener('submit', async (e) => {
@@ -24,10 +161,8 @@ if (uploadForm) {
         const submitBtn = document.getElementById('submit-btn');
         const fileInput = document.getElementById('file_upload');
         const file = fileInput.files[0];
-        
         if (!file) return;
 
-        // Custom client-side size validation (50MB)
         if (file.size > 50 * 1024 * 1024) {
             showStatus('status-message', 'File exceeds maximum allowed size (50MB).', true);
             return;
@@ -37,8 +172,7 @@ if (uploadForm) {
         hideStatus('status-message');
         
         try {
-            // STEP 1: Get Presigned URL
-            showStatus('status-message', 'Configuring secure upload...', false);
+            showStatus('status-message', 'Configuring upload...', false);
             
             const presignedRes = await fetch(`${API_BASE_URL}/upload/presigned`, {
                 method: 'POST',
@@ -46,16 +180,10 @@ if (uploadForm) {
                 body: JSON.stringify({ filename: file.name })
             });
             
-            if (!presignedRes.ok) {
-                const error = await presignedRes.json();
-                throw new Error(error.detail || 'Failed to get upload authorization');
-            }
-            
+            if (!presignedRes.ok) throw new Error('Failed to get upload authorization');
             const presignedData = await presignedRes.json();
-            const { url, method, content_type } = presignedData;
-            const fileKey = presignedData.filename; // Fixed to parse correctly from main.py return
+            const { url, method, content_type, filename: fileKey } = presignedData;
 
-            // STEP 2: Upload direct to R2 using XMLHttpRequest PUT
             showStatus('status-message', 'Uploading file securely...', false);
             const progressContainer = document.getElementById('progress-container');
             const progressFill = document.getElementById('progress-fill');
@@ -65,37 +193,20 @@ if (uploadForm) {
             await new Promise((resolve, reject) => {
                 const xhr = new XMLHttpRequest();
                 xhr.open(method || 'PUT', url, true);
-                
-                if (content_type) {
-                    xhr.setRequestHeader('Content-Type', content_type);
-                }
-                
-                xhr.upload.onprogress = (e) => {
-                    if (e.lengthComputable) {
-                        const percent = Math.round((e.loaded / e.total) * 100);
+                if (content_type) xhr.setRequestHeader('Content-Type', content_type);
+                xhr.upload.onprogress = (evt) => {
+                    if (evt.lengthComputable) {
+                        const percent = Math.round((evt.loaded / evt.total) * 100);
                         progressFill.style.width = `${percent}%`;
                         progressText.textContent = `Uploading: ${percent}%`;
                     }
                 };
-                
-                xhr.onload = () => {
-                    if (xhr.status >= 200 && xhr.status < 300) {
-                        resolve();
-                    } else {
-                        reject(new Error(`Upload failed with status ${xhr.status}. Cloudflare rejected the file.`));
-                    }
-                };
-                
-                xhr.onerror = (err) => {
-                    console.error("Upload Network Error:", err, "URL attempted:", url);
-                    reject(new Error(`CORS or Network error! Cloudflare blocked the request. Check your Bucket Settings -> CORS policy!`));
-                };
+                xhr.onload = () => xhr.status >= 200 && xhr.status < 300 ? resolve() : reject(new Error('Upload failed.'));
+                xhr.onerror = () => reject(new Error('Network error.'));
                 xhr.send(file);
             });
 
             progressContainer.classList.add('hidden');
-
-            // STEP 3: Create Order Record
             showStatus('status-message', 'Finalizing order...', false);
             
             const orderData = {
@@ -109,87 +220,78 @@ if (uploadForm) {
                 file_name: file.name
             };
 
-            const headers = { 'Content-Type': 'application/json' };
             const token = localStorage.getItem('client_token');
-            if (token) headers['Authorization'] = `Bearer ${token}`;
-
             const orderRes = await fetch(`${API_BASE_URL}/orders`, {
                 method: 'POST',
-                headers: headers,
+                headers: { 
+                    'Content-Type': 'application/json',
+                    ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+                },
                 body: JSON.stringify(orderData)
             });
 
-            if (!orderRes.ok) throw new Error('Order creation failed on our server.');
+            if (!orderRes.ok) throw new Error('Order creation failed.');
 
-            showStatus('status-message', 'Order placed successfully! You will be contacted shortly.');
+            showStatus('status-message', '🎉 Order placed successfully!');
             uploadForm.reset();
+            window.fetchOrders(); // Refresh table
             
         } catch (error) {
             showStatus('status-message', error.message, true);
-            const progressContainer = document.getElementById('progress-container');
-            if (progressContainer) progressContainer.classList.add('hidden');
+            document.getElementById('progress-container').classList.add('hidden');
         } finally {
             submitBtn.disabled = false;
         }
     });
 }
 
-// Admin Dashboard Logic
+// =======================
+// ADMIN LOGIC
+// =======================
 window.initAdminDashboard = async () => {
     const tbody = document.getElementById('orders-tbody');
     const refreshBtn = document.getElementById('refresh-btn');
     
-    const fetchOrders = async () => {
+    const fetchAdminOrders = async () => {
         try {
             tbody.innerHTML = '<tr><td colspan="6" class="text-center">Loading orders...</td></tr>';
-            
             const response = await fetch(`${API_BASE_URL}/admin/orders`);
-            
             if (response.status === 401) {
-                // If the browser natively didn't pop up auth or failed
-                tbody.innerHTML = '<tr><td colspan="6" class="text-center status-error">Unauthorized. Please reload and login.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="6" class="status-error">Unauthorized.</td></tr>';
                 return;
             }
             if (!response.ok) throw new Error('Failed to fetch orders');
             
             const orders = await response.json();
-            renderOrders(orders);
+            if (orders.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" class="text-center">No orders found.</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = orders.map(o => `
+                <tr>
+                    <td><small>${o.id.substring(0, 8)}...</small></td>
+                    <td>
+                        <strong>${o.client_name}</strong><br>
+                        <small>${o.contact_email}</small><br>
+                        <small>${o.contact_phone || ''}</small>
+                    </td>
+                    <td>
+                        ${o.copies}x ${o.paper_size}<br>
+                        <small style="text-transform:uppercase">${o.color_mode}</small>
+                    </td>
+                    <td>${o.file_name}</td>
+                    <td><span class="badge badge-${o.status}">${o.status}</span></td>
+                    <td class="action-links">
+                        <button class="btn btn-secondary" onclick="downloadFile('${o.id}')">Download</button>
+                        ${o.status === 'pending' ? `<button class="btn btn-primary" onclick="updateStatus('${o.id}', 'printed')">Mark Printed</button>` : ''}
+                        ${o.status === 'printed' ? `<button class="btn btn-secondary" style="background:#64748b" onclick="updateStatus('${o.id}', 'archived')">Archive</button>` : ''}
+                    </td>
+                </tr>
+            `).join('');
         } catch (error) {
-            tbody.innerHTML = `<tr><td colspan="6" class="text-center status-error">${error.message}</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="6" class="status-error">${error.message}</td></tr>`;
         }
-    };
-
-    const renderOrders = (orders) => {
-        if (orders.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="6" class="text-center">No orders found.</td></tr>';
-            return;
-        }
-
-        tbody.innerHTML = '';
-        orders.forEach(o => {
-            const tr = document.createElement('tr');
-            
-            tr.innerHTML = `
-                <td><small>${o.id.substring(0, 8)}...</small></td>
-                <td>
-                    <strong>${o.client_name}</strong><br>
-                    <small>${o.contact_email}</small><br>
-                    <small>${o.contact_phone || ''}</small>
-                </td>
-                <td>
-                    ${o.copies}x ${o.paper_size}<br>
-                    <small style="text-transform:uppercase">${o.color_mode}</small>
-                </td>
-                <td>${o.file_name}</td>
-                <td><span class="badge badge-${o.status}">${o.status}</span></td>
-                <td class="action-links">
-                    <button class="btn btn-secondary" onclick="downloadFile('${o.id}')">Download</button>
-                    ${o.status === 'pending' ? `<button class="btn btn-primary" onclick="updateStatus('${o.id}', 'printed')">Mark Printed</button>` : ''}
-                    ${o.status === 'printed' ? `<button class="btn btn-secondary" style="background:#64748b" onclick="updateStatus('${o.id}', 'archived')">Archive</button>` : ''}
-                </td>
-            `;
-            tbody.appendChild(tr);
-        });
     };
 
     window.downloadFile = async (id) => {
@@ -198,9 +300,7 @@ window.initAdminDashboard = async () => {
             if (!res.ok) throw new Error('Failed to get download URL');
             const data = await res.json();
             window.open(data.url, '_blank');
-        } catch (error) {
-            alert(error.message);
-        }
+        } catch (error) { alert(error.message); }
     };
 
     window.updateStatus = async (id, status) => {
@@ -212,14 +312,10 @@ window.initAdminDashboard = async () => {
                 body: JSON.stringify({ status })
             });
             if (!res.ok) throw new Error('Failed to update status');
-            fetchOrders();
-        } catch (error) {
-            alert(error.message);
-        }
+            fetchAdminOrders();
+        } catch (error) { alert(error.message); }
     };
 
-    if (refreshBtn) refreshBtn.addEventListener('click', fetchOrders);
-    
-    // Initial fetch
-    fetchOrders();
+    if (refreshBtn) refreshBtn.addEventListener('click', fetchAdminOrders);
+    fetchAdminOrders();
 };

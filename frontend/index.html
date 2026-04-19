@@ -3,82 +3,141 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Print Service Portal</title>
+    <title>Dashboard - Secure Print Portal</title>
     <link rel="stylesheet" href="/static/css/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        .auth-container { max-width: 400px; margin: 4rem auto; padding: 2rem; background: white; border-radius: 12px; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); }
+        .dashboard-container { max-width: 1000px; margin: 2rem auto; display: none; }
+        .header-actions { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; }
+        .hidden { display: none !important; }
+        .tabs { display: flex; gap: 1rem; margin-bottom: 2rem; border-bottom: 1px solid #e2e8f0; padding-bottom: 1rem; }
+        .tab { padding: 0.5rem 1rem; cursor: pointer; border-radius: 6px; font-weight: 500; }
+        .tab.active { background: #4f46e5; color: white; }
+        
+        .dashboard-grid { display: grid; gap: 2rem; grid-template-columns: 1fr; }
+        @media (min-width: 768px) { .dashboard-grid { grid-template-columns: 350px 1fr; } }
+        .panel { background: white; padding: 1.5rem; border-radius: 12px; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); }
+    </style>
 </head>
 <body>
-    <div class="container">
-        <header style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e2e8f0; padding-bottom: 1rem; margin-bottom: 2rem;">
-            <div>
-                <h1 style="margin-bottom: 0.5rem;">🖨️ Print Service Portal</h1>
-                <p style="margin: 0;">Submit your document for professional printing.</p>
+    <nav class="navbar" id="top-nav" style="display: none;">
+        <div class="nav-content" style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+            <h1>🖨️ Secure Print Portal</h1>
+            <button onclick="logout()" class="btn btn-secondary">Logout</button>
+        </div>
+    </nav>
+
+    <!-- Login / Register View -->
+    <div id="auth-view" class="auth-container">
+        <div style="text-align: center; margin-bottom: 2rem;">
+            <h1>🖨️</h1>
+            <h3>Client Area</h3>
+            <p style="color: #64748b; margin-top: 0.5rem;">Login to submit print requests</p>
+        </div>
+
+        <div class="tabs">
+            <div class="tab active" onclick="switchAuth('login')">Login</div>
+            <div class="tab" onclick="switchAuth('register')">Register</div>
+        </div>
+
+        <form id="auth-form">
+            <div class="form-group">
+                <label>Username</label>
+                <input type="text" id="username" required>
             </div>
-            <a href="/client" class="btn btn-secondary">Client Login</a>
-        </header>
+            <div class="form-group">
+                <label>Password</label>
+                <input type="password" id="password" required>
+            </div>
+            <button type="submit" class="btn btn-primary" style="width: 100%" id="auth-btn">Login</button>
+            <p id="auth-status" class="status-message hidden"></p>
+        </form>
+    </div>
 
-        <main>
-            <form id="uploadForm">
-                <div class="form-group">
-                    <label for="client_name">Full Name</label>
-                    <input type="text" id="client_name" name="client_name" required>
-                </div>
-
-                <div class="form-group">
-                    <label for="contact_email">Email Address</label>
-                    <input type="email" id="contact_email" name="contact_email" required>
-                </div>
-
-                <div class="form-group">
-                    <label for="contact_phone">Phone Number (Optional)</label>
-                    <input type="tel" id="contact_phone" name="contact_phone">
-                </div>
-
-                <div class="form-row">
+    <!-- Client Dashboard View -->
+    <div id="dashboard-view" class="dashboard-container container">
+        <div class="dashboard-grid">
+            <!-- Left Side: Order Form -->
+            <div class="panel">
+                <h3 style="margin-top: 0; margin-bottom: 1.5rem;">📝 Submit New Order</h3>
+                <form id="uploadForm">
                     <div class="form-group">
-                        <label for="copies">Copies</label>
-                        <input type="number" id="copies" name="copies" min="1" max="500" value="1" required>
+                        <label for="client_name">Full Name</label>
+                        <input type="text" id="client_name" name="client_name" required>
                     </div>
 
                     <div class="form-group">
-                        <label for="paper_size">Paper Size</label>
-                        <select id="paper_size" name="paper_size" required>
-                            <option value="A4">A4 (Standard)</option>
-                            <option value="A3">A3</option>
-                            <option value="Letter">US Letter</option>
-                        </select>
+                        <label for="contact_email">Email Address</label>
+                        <input type="email" id="contact_email" name="contact_email" required>
                     </div>
-                </div>
 
-                <div class="form-group options-group">
-                    <label>Color Mode</label>
-                    <div class="radio-group">
-                        <label>
-                            <input type="radio" name="color_mode" value="bw" checked required> B&W
-                        </label>
-                        <label>
-                            <input type="radio" name="color_mode" value="color" required> Color
-                        </label>
+                    <div class="form-group">
+                        <label for="contact_phone">Phone (Optional)</label>
+                        <input type="tel" id="contact_phone" name="contact_phone">
                     </div>
-                </div>
 
-                <div class="form-group">
-                    <label for="file_upload">Upload Document</label>
-                    <p class="file-hint">Allowed formats: .pdf, .doc, .docx (Max 50MB)</p>
-                    <input type="file" id="file_upload" name="file_upload" accept=".pdf,.doc,.docx" required>
-                </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="copies">Copies</label>
+                            <input type="number" id="copies" name="copies" min="1" max="500" value="1" required>
+                        </div>
 
-                <div id="progress-container" class="hidden">
-                    <div class="progress-bar">
-                        <div id="progress-fill"></div>
+                        <div class="form-group">
+                            <label for="paper_size">Paper Size</label>
+                            <select id="paper_size" name="paper_size" required>
+                                <option value="A4">A4 (Standard)</option>
+                                <option value="A3">A3</option>
+                                <option value="Letter">US Letter</option>
+                            </select>
+                        </div>
                     </div>
-                    <p id="progress-text">Uploading: 0%</p>
+
+                    <div class="form-group options-group">
+                        <label>Color Mode</label>
+                        <div class="radio-group">
+                            <label><input type="radio" name="color_mode" value="bw" checked required> B&W</label>
+                            <label><input type="radio" name="color_mode" value="color" required> Color</label>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="file_upload">Upload Document</label>
+                        <p class="file-hint">Max 50MB (.pdf, .doc, .docx)</p>
+                        <input type="file" id="file_upload" name="file_upload" accept=".pdf,.doc,.docx" required>
+                    </div>
+
+                    <div id="progress-container" class="hidden">
+                        <div class="progress-bar"><div id="progress-fill"></div></div>
+                        <p id="progress-text">Uploading: 0%</p>
+                    </div>
+
+                    <div id="status-message" class="hidden"></div>
+                    <button type="submit" id="submit-btn" class="btn btn-primary" style="width: 100%">Submit Print Job</button>
+                </form>
+            </div>
+
+            <!-- Right Side: Order History -->
+            <div class="panel table-container">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                    <h3 style="margin: 0;">📚 My Order History</h3>
+                    <button onclick="fetchOrders()" class="btn btn-secondary" style="padding: 0.25rem 0.75rem; font-size: 0.875rem;">Refresh</button>
                 </div>
-
-                <div id="status-message" class="hidden"></div>
-
-                <button type="submit" id="submit-btn" class="btn btn-primary">Submit Order</button>
-            </form>
-        </main>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Details</th>
+                            <th>Date</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="client-orders-tbody">
+                        <!-- Orders will be injected here -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
     </div>
 
     <script src="/static/js/app.js"></script>
