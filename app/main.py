@@ -90,9 +90,11 @@ def list_orders(
     statement = select(Order).order_by(Order.created_at.desc())
     return session.exec(statement).all()
 
+import uuid
+
 @app.patch("/api/admin/orders/{order_id}/status")
 def update_order_status(
-    order_id: str,
+    order_id: uuid.UUID,
     update_data: OrderUpdate,
     session: Session = Depends(get_session),
     admin: str = Depends(verify_admin)
@@ -109,7 +111,7 @@ def update_order_status(
 
 @app.get("/api/admin/orders/{order_id}/download")
 def get_download_link(
-    order_id: str,
+    order_id: uuid.UUID,
     session: Session = Depends(get_session),
     admin: str = Depends(verify_admin)
 ):
