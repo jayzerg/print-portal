@@ -38,9 +38,12 @@ async def lifespan(app: FastAPI):
     create_db_and_tables()
     with Session(engine) as session:
         try:
-            session.exec(text('ALTER TABLE "order" ADD COLUMN client_id CHAR(32)'))
+            # Recreate the column properly as UUID with a foreign key constraint to avoid type mismatch
+            session.exec(text('ALTER TABLE "order" DROP COLUMN IF EXISTS client_id'))
+            session.exec(text('ALTER TABLE "order" ADD COLUMN client_id UUID REFERENCES clientuser(id)'))
             session.commit()
-        except:
+        except Exception as e:
+            print(f"Warning during DB Migration: {e}")
             session.rollback()
     start_scheduler()
     yield
