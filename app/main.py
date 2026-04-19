@@ -138,10 +138,16 @@ def get_download_link(
 
 app.mount("/static", StaticFiles(directory="frontend/static"), name="static")
 
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
+
 @app.get("/")
 def serve_index():
     with open("frontend/index.html", "r", encoding="utf-8") as f:
         return HTMLResponse(content=f.read())
+
+@app.get("/client")
+def redirect_client():
+    return RedirectResponse(url="/")
 
 @app.get("/admin")
 def serve_admin(admin: str = Depends(verify_admin)):
