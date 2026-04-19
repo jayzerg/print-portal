@@ -6,8 +6,15 @@ from typing import Optional
 def get_utc_now():
     return datetime.now(timezone.utc)
 
+class ClientUser(SQLModel, table=True):
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    username: str = Field(unique=True, index=True)
+    password_hash: str
+    created_at: datetime = Field(default_factory=get_utc_now)
+
 class Order(SQLModel, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    client_id: Optional[uuid.UUID] = Field(default=None, foreign_key="clientuser.id")
     client_name: str
     contact_email: str
     contact_phone: Optional[str] = None

@@ -12,8 +12,11 @@ from pydantic import BaseModel
 
 from .config import settings
 from .database import engine, get_session, create_db_and_tables
-from .models import Order, OrderCreate, OrderUpdate
+from .models import Order, OrderCreate, OrderUpdate, ClientUser
 from .storage import generate_presigned_post, generate_download_url
+from .auth import get_password_hash, verify_password, create_access_token, get_current_client, get_optional_client, ACCESS_TOKEN_EXPIRE_MINUTES
+from fastapi.security import OAuth2PasswordRequestForm
+from sqlalchemy import text
 from .notifications import notify_admin
 from .scheduler import start_scheduler, stop_scheduler
 
@@ -33,6 +36,12 @@ def verify_admin(credentials: HTTPBasicCredentials = Depends(security)):
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     create_db_and_tables()
+    with Session(engine) as session:
+        try:
+            session.exec(text('ALTER TABLE "order" ADD COLUMN client_id CHAR(32)'))
+            session.commit()
+        except:
+            session.rollback()
     start_scheduler()
     yield
     stop_scheduler()
@@ -63,12 +72,16 @@ def get_presigned_url(request: PresignedRequest):
 
 @app.post("/api/orders", response_model=Order)
 def create_order(
+    request: Request,
     order_in: OrderCreate, 
     background_tasks: BackgroundTasks, 
     session: Session = Depends(get_session)
 ):
     try:
         order = Order.model_validate(order_in)
+        client = get_optional_client(request, session)
+        if client:
+            order.client_id = client.id
         session.add(order)
         session.commit()
         session.refresh(order)
@@ -135,4 +148,41 @@ def serve_index():
 @app.get("/admin")
 def serve_admin(admin: str = Depends(verify_admin)):
     with open("frontend/admin.html", "r", encoding="utf-8") as f:
+        return HTMLResponse(content=f.read())
+
+class UserCreate(BaseModel):
+    username: str
+    password: str
+
+@app.post("/api/auth/register")
+def register(user: UserCreate, session: Session = Depends(get_session)):
+    existing = session.exec(select(ClientUser).where(ClientUser.username == user.username)).first()
+    if existing:
+        raise HTTPException(status_code=400, detail="Username already registered")
+    
+    new_user = ClientUser(
+        username=user.username,
+        password_hash=get_password_hash(user.password)
+    )
+    session.add(new_user)
+    session.commit()
+    return {"message": "User registered successfully"}
+
+@app.post("/api/auth/login")
+def login(form_data: OAuth2PasswordRequestForm = Depends(), session: Session = Depends(get_session)):
+    user = session.exec(select(ClientUser).where(ClientUser.username == form_data.username)).first()
+    if not user or not verify_password(form_data.password, user.password_hash):
+        raise HTTPException(status_code=400, detail="Incorrect username or password")
+    
+    access_token = create_access_token(data={"sub": user.username})
+    return {"access_token": access_token, "token_type": "bearer"}
+
+@app.get("/api/client/orders", response_model=List[Order])
+def list_client_orders(client: ClientUser = Depends(get_current_client), session: Session = Depends(get_session)):
+    statement = select(Order).where(Order.client_id == client.id).order_by(Order.created_at.desc())
+    return session.exec(statement).all()
+
+@app.get("/client")
+def serve_client():
+    with open("frontend/client.html", "r", encoding="utf-8") as f:
         return HTMLResponse(content=f.read())

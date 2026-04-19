@@ -109,9 +109,13 @@ if (uploadForm) {
                 file_name: file.name
             };
 
+            const headers = { 'Content-Type': 'application/json' };
+            const token = localStorage.getItem('client_token');
+            if (token) headers['Authorization'] = `Bearer ${token}`;
+
             const orderRes = await fetch(`${API_BASE_URL}/orders`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: headers,
                 body: JSON.stringify(orderData)
             });
 
