@@ -48,7 +48,12 @@
             </div>
             <div class="form-group">
                 <label>Password</label>
-                <input type="password" id="password" required>
+                <div style="position: relative; width: 60%;">
+                    <input type="password" id="password" required style="padding-right: 2.5rem; font-size: 0.875rem;">
+                    <button type="button" id="toggle-password" style="position: absolute; right: 0.5rem; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; color: #64748b;" onclick="const pw = document.getElementById('password'); const icon = document.getElementById('toggle-icon'); if(pw.type === 'password') { pw.type = 'text'; icon.textContent = '🙈'; } else { pw.type = 'password'; icon.textContent = '👁️'; }">
+                        <span id="toggle-icon">👁️</span>
+                    </button>
+                </div>
             </div>
             <button type="submit" class="btn btn-primary" style="width: 100%" id="auth-btn">Login</button>
             <p id="auth-status" class="status-message hidden"></p>
