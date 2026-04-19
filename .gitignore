@@ -1,0 +1,20 @@
+# Environment variables
+.env
+
+# Agent & System folders
+.agent/
+.vscode/
+
+# Python caching
+__pycache__/
+*.pyc
+
+# Virtual environments
+venv/
+env/
+.venv/
+
+# Database files
+*.db
+*.sqlite3
+printportal.db

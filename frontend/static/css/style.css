@@ -1,0 +1,110 @@
+:root {
+    --primary-color: #2563eb;
+    --primary-hover: #1d4ed8;
+    --secondary-color: #64748b;
+    --secondary-hover: #475569;
+    --success-color: #16a34a;
+    --error-color: #dc2626;
+    --background: #f8fafc;
+    --card-bg: #ffffff;
+    --text-main: #0f172a;
+    --text-muted: #64748b;
+    --border-color: #e2e8f0;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background-color: var(--background);
+    color: var(--text-main);
+    line-height: 1.5;
+    padding: 2rem 1rem;
+}
+
+.container {
+    max-width: 600px;
+    margin: 0 auto;
+    background: var(--card-bg);
+    padding: 2rem;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
+}
+
+header {text-align: center; margin-bottom: 2rem;}
+header h1 {font-size: 1.8rem; margin-bottom: 0.5rem;}
+header p {color: var(--text-muted);}
+
+.form-group {margin-bottom: 1.5rem;}
+.form-row {display: flex; gap: 1rem;}
+.form-row .form-group {flex: 1;}
+
+label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+}
+
+input[type="text"], input[type="email"], input[type="tel"], input[type="number"], select, input[type="file"] {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    font-size: 1rem;
+}
+
+input:focus, select:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(37,99,235,0.1);
+}
+
+.radio-group { display: flex; gap: 1rem; }
+.radio-group label {
+    display: flex; align-items: center; gap: 0.5rem; font-weight: normal; cursor: pointer;
+}
+
+.file-hint {font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.5rem;}
+
+.btn {
+    display: inline-block; width: 100%; padding: 0.75rem 1.5rem;
+    font-size: 1rem; font-weight: 600; text-align: center;
+    border: none; border-radius: 6px; cursor: pointer; transition: background-color 0.2s;
+}
+
+.btn-primary { background-color: var(--primary-color); color: white; }
+.btn-primary:hover:not(:disabled) { background-color: var(--primary-hover); }
+.btn-primary:disabled { opacity: 0.7; cursor: not-allowed; }
+
+.btn-secondary { background-color: var(--secondary-color); color: white; width: auto; padding: 0.5rem 1rem;}
+.btn-secondary:hover { background-color: var(--secondary-hover); }
+
+/* Progress bar */
+.hidden { display: none !important; }
+#progress-container { margin-bottom: 1.5rem; }
+.progress-bar { width: 100%; height: 8px; background-color: var(--border-color); border-radius: 4px; overflow: hidden; margin-bottom: 0.5rem; }
+#progress-fill { width: 0%; height: 100%; background-color: var(--primary-color); transition: width 0.2s ease; }
+#progress-text { font-size: 0.875rem; color: var(--text-muted); text-align: right; }
+
+#status-message { padding: 1rem; border-radius: 6px; margin-bottom: 1.5rem; }
+.status-success { background-color: #dcfce7; color: var(--success-color); border: 1px solid #bbf7d0; }
+.status-error { background-color: #fee2e2; color: var(--error-color); border: 1px solid #fecaca; }
+
+/* Admin Styles */
+.admin-body { max-width: 1000px; margin: 0 auto; }
+.admin-container { background: var(--card-bg); padding: 2rem; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
+.admin-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 1rem; margin-bottom: 1.5rem;}
+.table-responsive { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; text-align: left; }
+th, td { padding: 1rem; border-bottom: 1px solid var(--border-color); }
+th { font-weight: 600; color: var(--text-muted); background: #f8fafc; }
+.badge { padding: 0.25rem 0.75rem; border-radius: 999px; font-size: 0.875rem; font-weight: 500; }
+.badge-pending { background-color: #fef3c7; color: #d97706; }
+.badge-printed { background-color: #dcfce7; color: #16a34a; }
+.badge-archived { background-color: #f1f5f9; color: #64748b; }
+.action-links button { margin-right: 0.5rem; margin-bottom: 0.5rem; font-size: 0.875rem; padding: 0.25rem 0.5rem; }
+
+@media print {
+    .btn, header { display: none; }
+    .container { box-shadow: none; padding: 0; }
+}
