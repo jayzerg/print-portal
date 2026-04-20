@@ -18,19 +18,12 @@ const hideStatus = (elementId) => {
 };
 
 // =======================
-// CLIENT AUTH & DASHBOARD
+// CLIENT DASHBOARD LOGIC
 // =======================
-let currentMode = 'login';
 
 window.onload = () => {
-    const token = localStorage.getItem('client_token');
-    const authView = document.getElementById('auth-view');
-    if (authView) {
-        if (token) {
-            showDashboard();
-        } else {
-            authView.style.display = 'block';
-        }
+    if (document.getElementById('client-orders-tbody')) {
+        fetchOrders();
     }
     
     // Auto-init admin if it exists
@@ -39,93 +32,13 @@ window.onload = () => {
     }
 };
 
-window.switchAuth = (mode) => {
-    currentMode = mode;
-    const tabs = document.querySelectorAll('.tab');
-    if(tabs.length === 0) return;
-    tabs[0].classList.toggle('active', mode === 'login');
-    tabs[1].classList.toggle('active', mode === 'register');
-    document.getElementById('auth-btn').textContent = mode === 'login' ? 'Login' : 'Register';
-    hideStatus('auth-status');
-};
-
-const authForm = document.getElementById('auth-form');
-if (authForm) {
-    authForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const username = document.getElementById('username').value;
-        const password = document.getElementById('password').value;
-        const submitBtn = document.getElementById('auth-btn');
-        submitBtn.disabled = true;
-        
-        try {
-            if (currentMode === 'register') {
-                const res = await fetch(`${API_BASE_URL}/auth/register`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ username, password })
-                });
-                if (!res.ok) throw new Error((await res.json()).detail);
-                showStatus('auth-status', "Registered successfully! Please login.", false);
-                switchAuth('login');
-            } else {
-                const formData = new URLSearchParams();
-                formData.append('username', username);
-                formData.append('password', password);
-                
-                const res = await fetch(`${API_BASE_URL}/auth/login`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                    body: formData
-                });
-                if (!res.ok) throw new Error("Invalid username or password");
-                
-                const data = await res.json();
-                localStorage.setItem('client_token', data.access_token);
-                showDashboard();
-            }
-        } catch (err) {
-            showStatus('auth-status', err.message, true);
-        } finally {
-            submitBtn.disabled = false;
-        }
-    });
-}
-
-window.logout = () => {
-    localStorage.removeItem('client_token');
-    document.getElementById('auth-view').style.display = 'block';
-    document.getElementById('dashboard-view').style.display = 'none';
-    document.getElementById('top-nav').style.display = 'none';
-};
-
-window.showDashboard = () => {
-    document.getElementById('auth-view').style.display = 'none';
-    const authForm = document.getElementById('auth-form');
-    if(authForm) authForm.reset();
-
-    const dView = document.getElementById('dashboard-view');
-    const tNav = document.getElementById('top-nav');
-    if (dView) dView.style.display = 'block';
-    if (tNav) tNav.style.display = 'block';
-    
-    fetchOrders(); // Load client's orders
-};
-
 window.fetchOrders = async () => {
     const tbody = document.getElementById('client-orders-tbody');
     if (!tbody) return;
     
-    const token = localStorage.getItem('client_token');
     try {
-        const res = await fetch(`${API_BASE_URL}/client/orders`, {
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
+        const res = await fetch(`${API_BASE_URL}/client/orders`);
         
-        if (res.status === 401) {
-            logout();
-            return;
-        }
         if (!res.ok) throw new Error('Failed to fetch');
         
         const orders = await res.json();
@@ -211,8 +124,8 @@ if (uploadForm) {
             
             const orderData = {
                 client_name: document.getElementById('client_name').value,
-                contact_email: document.getElementById('contact_email').value,
-                contact_phone: document.getElementById('contact_phone').value || null,
+                contact_email: "no-email@provided.com",
+                contact_phone: null,
                 copies: parseInt(document.getElementById('copies').value),
                 color_mode: document.querySelector('input[name="color_mode"]:checked').value,
                 paper_size: document.getElementById('paper_size').value,
@@ -220,12 +133,10 @@ if (uploadForm) {
                 file_name: file.name
             };
 
-            const token = localStorage.getItem('client_token');
             const orderRes = await fetch(`${API_BASE_URL}/orders`, {
                 method: 'POST',
                 headers: { 
-                    'Content-Type': 'application/json',
-                    ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+                    'Content-Type': 'application/json'
                 },
                 body: JSON.stringify(orderData)
             });

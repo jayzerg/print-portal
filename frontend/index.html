@@ -7,8 +7,7 @@
     <link rel="stylesheet" href="/static/css/style.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        .auth-container { max-width: 400px; margin: 4rem auto; padding: 2rem; background: white; border-radius: 12px; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); }
-        .dashboard-container { max-width: 1000px; margin: 2rem auto; display: none; }
+        .dashboard-container { max-width: 1000px; margin: 2rem auto; }
         .header-actions { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; }
         .hidden { display: none !important; }
         .tabs { display: flex; gap: 1rem; margin-bottom: 2rem; border-bottom: 1px solid #e2e8f0; padding-bottom: 1rem; }
@@ -21,44 +20,12 @@
     </style>
 </head>
 <body>
-    <nav class="navbar" id="top-nav" style="display: none;">
+    <nav class="navbar" id="top-nav">
         <div class="nav-content" style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
             <h1>🖨️ Secure Print Portal</h1>
-            <button onclick="logout()" class="btn btn-secondary">Logout</button>
         </div>
     </nav>
 
-    <!-- Login / Register View -->
-    <div id="auth-view" class="auth-container">
-        <div style="text-align: center; margin-bottom: 2rem;">
-            <h1>🖨️</h1>
-            <h3>Client Area</h3>
-            <p style="color: #64748b; margin-top: 0.5rem;">Login to submit print requests</p>
-        </div>
-
-        <div class="tabs">
-            <div class="tab active" onclick="switchAuth('login')">Login</div>
-            <div class="tab" onclick="switchAuth('register')">Register</div>
-        </div>
-
-        <form id="auth-form">
-            <div class="form-group">
-                <label>Username</label>
-                <input type="text" id="username" required>
-            </div>
-            <div class="form-group">
-                <label>Password</label>
-                <div style="position: relative; width: 100%;">
-                    <input type="password" id="password" required style="padding-right: 2.5rem; width: 100%;">
-                    <button type="button" id="toggle-password" style="position: absolute; right: 0.75rem; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; color: #64748b; font-size: 1.2rem; padding: 0;" onclick="const pw = document.getElementById('password'); const icon = document.getElementById('toggle-icon'); if(pw.type === 'password') { pw.type = 'text'; icon.textContent = '🙈'; } else { pw.type = 'password'; icon.textContent = '👁️'; }">
-                        <span id="toggle-icon">👁️</span>
-                    </button>
-                </div>
-            </div>
-            <button type="submit" class="btn btn-primary" style="width: 100%" id="auth-btn">Login</button>
-            <p id="auth-status" class="status-message hidden"></p>
-        </form>
-    </div>
 
     <!-- Client Dashboard View -->
     <div id="dashboard-view" class="dashboard-container container">
@@ -68,18 +35,9 @@
                 <h3 style="margin-top: 0; margin-bottom: 1.5rem;">📝 Submit New Order</h3>
                 <form id="uploadForm">
                     <div class="form-group">
-                        <label for="client_name">Full Name</label>
+                    <div class="form-group">
+                        <label for="client_name">Name</label>
                         <input type="text" id="client_name" name="client_name" required>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="contact_email">Email Address</label>
-                        <input type="email" id="contact_email" name="contact_email" required>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="contact_phone">Phone (Optional)</label>
-                        <input type="tel" id="contact_phone" name="contact_phone">
                     </div>
 
                     <div class="form-row">
