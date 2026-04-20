@@ -59,7 +59,7 @@ window.fetchOrders = async () => {
         
         tbody.innerHTML = orders.map(o => `
             <tr>
-                <td><small>${o.id.substring(0, 8)}</small></td>
+                <td>${o.client_name}</td>
                 <td>
                     ${o.file_name}<br>
                     <small>${o.copies}x ${o.paper_size} (${o.color_mode})</small>
@@ -200,9 +200,8 @@ window.initAdminDashboard = async () => {
 
             tbody.innerHTML = orders.map(o => `
                 <tr>
-                    <td><small>${o.id.substring(0, 8)}...</small></td>
+                    <td><strong>${o.client_name}</strong></td>
                     <td>
-                        <strong>${o.client_name}</strong><br>
                         <small>${o.contact_email}</small><br>
                         <small>${o.contact_phone || ''}</small>
                     </td>
