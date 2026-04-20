@@ -36,8 +36,18 @@ window.fetchOrders = async () => {
     const tbody = document.getElementById('client-orders-tbody');
     if (!tbody) return;
     
+    let url = `${API_BASE_URL}/client/orders`;
     try {
-        const res = await fetch(`${API_BASE_URL}/client/orders`);
+        const myOrderIds = JSON.parse(localStorage.getItem('myOrderIds') || '[]');
+        if (myOrderIds.length > 0) {
+            const params = new URLSearchParams();
+            myOrderIds.forEach(id => params.append('order_ids', id));
+            url += `?${params.toString()}`;
+        }
+    } catch(e) {}
+
+    try {
+        const res = await fetch(url);
         
         if (!res.ok) throw new Error('Failed to fetch');
         
@@ -142,6 +152,15 @@ if (uploadForm) {
             });
 
             if (!orderRes.ok) throw new Error('Order creation failed.');
+            const createdOrder = await orderRes.json();
+            
+            try {
+                const myOrderIds = JSON.parse(localStorage.getItem('myOrderIds') || '[]');
+                if (!myOrderIds.includes(createdOrder.id)) {
+                    myOrderIds.push(createdOrder.id);
+                    localStorage.setItem('myOrderIds', JSON.stringify(myOrderIds));
+                }
+            } catch(e) {}
 
             showStatus('status-message', '🎉 Order placed successfully!');
             uploadForm.reset();

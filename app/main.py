@@ -2,7 +2,7 @@ import secrets
 from contextlib import asynccontextmanager
 from typing import List, Optional
 
-from fastapi import FastAPI, Depends, HTTPException, status, Request, BackgroundTasks
+from fastapi import FastAPI, Depends, HTTPException, status, Request, BackgroundTasks, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from fastapi.staticfiles import StaticFiles
@@ -186,11 +186,18 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), session: Session = D
     return {"access_token": access_token, "token_type": "bearer"}
 
 @app.get("/api/client/orders", response_model=List[Order])
-def list_client_orders(client: Optional[ClientUser] = Depends(get_optional_client), session: Session = Depends(get_session)):
-    if not client:
-        return []
-    statement = select(Order).where(Order.client_id == client.id).order_by(Order.created_at.desc())
-    return session.exec(statement).all()
+def list_client_orders(
+    order_ids: List[uuid.UUID] = Query(default=[]),
+    client: Optional[ClientUser] = Depends(get_optional_client), 
+    session: Session = Depends(get_session)
+):
+    if client:
+        statement = select(Order).where(Order.client_id == client.id).order_by(Order.created_at.desc())
+        return session.exec(statement).all()
+    elif order_ids:
+        statement = select(Order).where(Order.id.in_(order_ids)).order_by(Order.created_at.desc())
+        return session.exec(statement).all()
+    return []
 
 @app.api_route("/health", methods=["GET", "HEAD"])
 def health_check():
