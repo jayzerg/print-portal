@@ -5,34 +5,43 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Dashboard - Print Portal</title>
     <link rel="stylesheet" href="/static/css/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
-<body class="admin-body">
-    <div class="admin-container">
-        <header class="admin-header">
-            <h1>🖨️ Admin Dashboard</h1>
-            <button id="refresh-btn" class="btn btn-secondary">Refresh Orders</button>
-        </header>
+<body>
+    <nav class="navbar">
+        <div style="display:flex; justify-content:space-between; align-items:center; width:100%;">
+            <h1>🖨️ Print Portal</h1>
+        </div>
+    </nav>
 
-        <main>
-            <div class="table-responsive">
-                <table id="orders-table">
-                    <thead>
-                        <tr>
-                            <th>Client Name</th>
-                            <th>Client Info</th>
-                            <th>Specs</th>
-                            <th>File</th>
-                            <th>Status</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody id="orders-tbody">
-                        <tr><td colspan="6" class="text-center">Loading orders...</td></tr>
-                    </tbody>
-                </table>
-            </div>
-            <div id="admin-status" class="hidden"></div>
-        </main>
+    <div class="admin-body">
+        <div class="admin-container">
+            <header class="admin-header">
+                <h1>🗂️ Admin Dashboard</h1>
+                <button id="refresh-btn" class="btn btn-secondary">Refresh Orders</button>
+            </header>
+
+            <main>
+                <div class="table-responsive">
+                    <table id="orders-table">
+                        <thead>
+                            <tr>
+                                <th>Client Name</th>
+                                <th>Contact</th>
+                                <th>Specs</th>
+                                <th>File</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="orders-tbody">
+                            <tr><td colspan="6" class="text-center">Loading orders...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div id="admin-status" class="hidden"></div>
+            </main>
+        </div>
     </div>
 
     <script src="/static/js/app.js"></script>

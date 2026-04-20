@@ -7,16 +7,9 @@
     <link rel="stylesheet" href="/static/css/style.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        .dashboard-container { max-width: 1000px; margin: 2rem auto; }
-        .header-actions { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; }
-        .hidden { display: none !important; }
-        .tabs { display: flex; gap: 1rem; margin-bottom: 2rem; border-bottom: 1px solid #e2e8f0; padding-bottom: 1rem; }
-        .tab { padding: 0.5rem 1rem; cursor: pointer; border-radius: 6px; font-weight: 500; }
-        .tab.active { background: #4f46e5; color: white; }
-        
-        .dashboard-grid { display: grid; gap: 2rem; grid-template-columns: 1fr; }
-        @media (min-width: 768px) { .dashboard-grid { grid-template-columns: 350px 1fr; } }
-        .panel { background: white; padding: 16px; border-radius: 16px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05); }
+        /* Dashboard-specific overrides */
+        .dashboard-container { max-width: 1100px; margin: 0 auto; }
+        .panel h3 { margin-top: 0; margin-bottom: 1.25rem; }
     </style>
 </head>
 <body>
@@ -74,15 +67,15 @@
                     </div>
 
                     <div id="status-message" class="hidden"></div>
-                    <button type="submit" id="submit-btn" class="btn btn-primary" style="width: 100%">Submit Print Job</button>
+                    <button type="submit" id="submit-btn" class="btn btn-primary">Submit Print Job</button>
                 </form>
             </div>
 
             <!-- Right Side: Order History -->
             <div class="panel table-container">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
-                    <h3 style="margin: 0;">📚 Print History</h3>
-                    <button onclick="fetchOrders()" class="btn btn-secondary" style="padding: 0.25rem 0.75rem; font-size: 0.875rem;">Refresh</button>
+                <div class="table-header">
+                    <h3>📚 Print History</h3>
+                    <button onclick="fetchOrders()" class="btn btn-secondary">Refresh</button>
                 </div>
                 <table>
                     <thead>
