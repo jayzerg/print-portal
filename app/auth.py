@@ -51,9 +51,10 @@ def get_current_client(token: str = Depends(oauth2_scheme), session: Session = D
         raise credentials_exception
     return client
 
+from fastapi import Request
+
 # Optional dependency for when users MIGHT be logged in but don't HAVE to be
-def get_optional_client(request, session: Session = Depends(get_session)):
-    from fastapi import Request
+def get_optional_client(request: Request, session: Session = Depends(get_session)):
     # Manually extract token since oauth2_scheme enforces it
     auth_header = request.headers.get("Authorization")
     if not auth_header or not auth_header.startswith("Bearer "):

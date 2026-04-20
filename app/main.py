@@ -1,6 +1,6 @@
 import secrets
 from contextlib import asynccontextmanager
-from typing import List
+from typing import List, Optional
 
 from fastapi import FastAPI, Depends, HTTPException, status, Request, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
@@ -77,12 +77,13 @@ def get_presigned_url(request: PresignedRequest):
 def create_order(
     order_in: OrderCreate, 
     background_tasks: BackgroundTasks, 
-    client: ClientUser = Depends(get_current_client),
+    client: Optional[ClientUser] = Depends(get_optional_client),
     session: Session = Depends(get_session)
 ):
     try:
         order = Order.model_validate(order_in)
-        order.client_id = client.id
+        if client:
+            order.client_id = client.id
         session.add(order)
         session.commit()
         session.refresh(order)
@@ -185,7 +186,9 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), session: Session = D
     return {"access_token": access_token, "token_type": "bearer"}
 
 @app.get("/api/client/orders", response_model=List[Order])
-def list_client_orders(client: ClientUser = Depends(get_current_client), session: Session = Depends(get_session)):
+def list_client_orders(client: Optional[ClientUser] = Depends(get_optional_client), session: Session = Depends(get_session)):
+    if not client:
+        return []
     statement = select(Order).where(Order.client_id == client.id).order_by(Order.created_at.desc())
     return session.exec(statement).all()
 
