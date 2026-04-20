@@ -26,9 +26,9 @@ body {
     max-width: 600px;
     margin: 0 auto;
     background: var(--card-bg);
-    padding: 2rem;
-    border-radius: 12px;
-    box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
+    padding: 16px;
+    border-radius: 16px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
 }
 
 header {text-align: center; margin-bottom: 2rem;}
@@ -92,7 +92,7 @@ input:focus, select:focus {
 
 /* Admin Styles */
 .admin-body { max-width: 1000px; margin: 0 auto; }
-.admin-container { background: var(--card-bg); padding: 2rem; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
+.admin-container { background: var(--card-bg); padding: 16px; border-radius: 16px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05); }
 .admin-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 1rem; margin-bottom: 1.5rem;}
 .table-responsive { overflow-x: auto; }
 table { width: 100%; border-collapse: collapse; text-align: left; }
