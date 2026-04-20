@@ -6,7 +6,7 @@ import uuid
 import mimetypes
 
 # Define strictly allowed types from prompt
-ALLOWED_EXTENSIONS = {'.doc', '.docx', '.pdf'}
+ALLOWED_EXTENSIONS = {'.doc', '.docx', '.pdf', '.jpg', '.jpeg', '.png'}
 
 def get_s3_client():
     return boto3.client(
