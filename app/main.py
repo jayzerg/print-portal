@@ -189,7 +189,7 @@ def list_client_orders(client: ClientUser = Depends(get_current_client), session
     statement = select(Order).where(Order.client_id == client.id).order_by(Order.created_at.desc())
     return session.exec(statement).all()
 
-@app.get("/health")
+@app.api_route("/health", methods=["GET", "HEAD"])
 def health_check():
     """Lightweight endpoint to keep the server alive on Render."""
     return {"status": "ok"}
