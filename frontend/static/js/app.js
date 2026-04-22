@@ -180,11 +180,10 @@ if (uploadForm) {
 // =======================
 window.initAdminDashboard = async () => {
     const tbody = document.getElementById('orders-tbody');
-    const refreshBtn = document.getElementById('refresh-btn');
     
-    const fetchAdminOrders = async () => {
+    const fetchAdminOrders = async (isPolling = false) => {
         try {
-            tbody.innerHTML = '<tr><td colspan="6" class="text-center">Loading orders...</td></tr>';
+            if (!isPolling) tbody.innerHTML = '<tr><td colspan="6" class="text-center">Loading orders...</td></tr>';
             const response = await fetch(`${API_BASE_URL}/admin/orders`);
             if (response.status === 401) {
                 tbody.innerHTML = '<tr><td colspan="6" class="status-error">Unauthorized.</td></tr>';
@@ -245,6 +244,6 @@ window.initAdminDashboard = async () => {
         } catch (error) { alert(error.message); }
     };
 
-    if (refreshBtn) refreshBtn.addEventListener('click', fetchAdminOrders);
     fetchAdminOrders();
+    setInterval(() => fetchAdminOrders(true), 15000);
 };
