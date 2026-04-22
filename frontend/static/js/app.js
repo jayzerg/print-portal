@@ -207,6 +207,12 @@ if (uploadForm) {
             } catch(e) {}
 
             showStatus('status-message', '🎉 Order placed successfully!');
+            setTimeout(() => {
+                const msg = document.getElementById('status-message');
+                if (msg && msg.classList.contains('status-success')) {
+                    hideStatus('status-message');
+                }
+            }, 5000);
             uploadForm.reset();
             window.fetchOrders(); // Refresh table
             
