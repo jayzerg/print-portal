@@ -76,7 +76,7 @@ window.fetchOrders = async () => {
                 <td>${new Date(o.created_at).toLocaleDateString()}</td>
                 <td>
                     <span class="badge badge-${o.status}" style="display:inline-block; margin-bottom:4px;">${o.status}</span><br>
-                    <button class="btn btn-secondary" style="padding:2px 8px; font-size:0.75rem; border-color:#ef4444; color:#ef4444;" onclick="deleteClientHistory('${o.id}')">Delete</button>
+                    <button style="background: transparent; border: none; color: #ef4444; cursor: pointer; font-size: 0.75rem; padding: 0; text-decoration: underline;" onclick="deleteClientHistory('${o.id}')">Delete</button>
                 </td>
             </tr>
         `).join('');
