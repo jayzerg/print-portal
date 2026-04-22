@@ -87,6 +87,21 @@ window.fetchOrders = async () => {
 // =======================
 const uploadForm = document.getElementById('uploadForm');
 if (uploadForm) {
+    const hideSuccessMessage = () => {
+        const msg = document.getElementById('status-message');
+        if (msg && msg.classList.contains('status-success')) {
+            hideStatus('status-message');
+        }
+    };
+    
+    uploadForm.addEventListener('input', hideSuccessMessage);
+    uploadForm.addEventListener('change', hideSuccessMessage);
+    uploadForm.addEventListener('click', (e) => {
+        if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT' || e.target.tagName === 'LABEL') {
+            hideSuccessMessage();
+        }
+    });
+
     uploadForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         
