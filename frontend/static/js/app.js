@@ -24,6 +24,7 @@ const hideStatus = (elementId) => {
 window.onload = () => {
     if (document.getElementById('client-orders-tbody')) {
         fetchOrders();
+        setInterval(fetchOrders, 5000);
     }
     
     // Auto-init admin if it exists
