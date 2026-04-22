@@ -233,17 +233,17 @@ window.initAdminDashboard = async () => {
     
     const fetchAdminOrders = async (isPolling = false) => {
         try {
-            if (!isPolling) tbody.innerHTML = '<tr><td colspan="6" class="text-center">Loading orders...</td></tr>';
+            if (!isPolling) tbody.innerHTML = '<tr><td colspan="5" class="text-center">Loading orders...</td></tr>';
             const response = await fetch(`${API_BASE_URL}/admin/orders`);
             if (response.status === 401) {
-                tbody.innerHTML = '<tr><td colspan="6" class="status-error">Unauthorized.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="5" class="status-error">Unauthorized.</td></tr>';
                 return;
             }
             if (!response.ok) throw new Error('Failed to fetch orders');
             
             const orders = await response.json();
             if (orders.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="6" class="text-center">No orders found.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="5" class="text-center">No orders found.</td></tr>';
                 return;
             }
 
@@ -269,10 +269,6 @@ window.initAdminDashboard = async () => {
                 <tr>
                     <td><strong>${o.client_name}</strong></td>
                     <td>
-                        <small>${o.contact_email}</small><br>
-                        <small>${o.contact_phone || ''}</small>
-                    </td>
-                    <td>
                         ${o.copies}x ${o.paper_size}<br>
                         <small style="text-transform:uppercase">${o.color_mode}</small>
                     </td>
@@ -286,7 +282,7 @@ window.initAdminDashboard = async () => {
                 </tr>
             `).join('');
         } catch (error) {
-            tbody.innerHTML = `<tr><td colspan="6" class="status-error">${error.message}</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="5" class="status-error">${error.message}</td></tr>`;
         }
     };
 
