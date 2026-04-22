@@ -16,8 +16,12 @@
 
     <div class="admin-body">
         <div class="admin-container">
-            <header class="admin-header">
-                <h1>🗂️ Admin Dashboard</h1>
+            <header class="admin-header" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:16px;">
+                <h1 style="margin:0;">🗂️ Admin Dashboard</h1>
+                <div class="admin-tabs" style="display:flex; gap: 8px;">
+                    <button id="tab-active" class="btn btn-primary" onclick="setAdminTab('active')">Active Orders</button>
+                    <button id="tab-archived" class="btn btn-secondary" onclick="setAdminTab('archived')">Archived</button>
+                </div>
             </header>
 
             <main>

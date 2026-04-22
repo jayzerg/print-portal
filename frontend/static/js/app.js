@@ -229,6 +229,22 @@ if (uploadForm) {
 // ADMIN LOGIC
 // =======================
 window.initAdminDashboard = async () => {
+    let currentAdminTab = 'active';
+
+    window.setAdminTab = (tabId) => {
+        currentAdminTab = tabId;
+        const btnActive = document.getElementById('tab-active');
+        const btnArchived = document.getElementById('tab-archived');
+        if (tabId === 'active') {
+            btnActive.className = 'btn btn-primary';
+            btnArchived.className = 'btn btn-secondary';
+        } else {
+            btnActive.className = 'btn btn-secondary';
+            btnArchived.className = 'btn btn-primary';
+        }
+        fetchAdminOrders();
+    };
+
     const tbody = document.getElementById('orders-tbody');
     
     const fetchAdminOrders = async (isPolling = false) => {
@@ -242,8 +258,13 @@ window.initAdminDashboard = async () => {
             if (!response.ok) throw new Error('Failed to fetch orders');
             
             const orders = await response.json();
-            if (orders.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="5" class="text-center">No orders found.</td></tr>';
+            
+            const visibleOrders = orders.filter(o => 
+                currentAdminTab === 'active' ? o.status !== 'archived' : o.status === 'archived'
+            );
+
+            if (visibleOrders.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" class="text-center">No orders found in this view.</td></tr>';
                 return;
             }
 
@@ -265,7 +286,7 @@ window.initAdminDashboard = async () => {
                 return `<button class="btn btn-secondary" onclick="downloadSingleFile('${id}', 0)">Download</button>`;
             };
 
-            tbody.innerHTML = orders.map(o => `
+            tbody.innerHTML = visibleOrders.map(o => `
                 <tr>
                     <td><strong>${o.client_name}</strong></td>
                     <td>
@@ -276,8 +297,8 @@ window.initAdminDashboard = async () => {
                     <td><span class="badge badge-${o.status}">${o.status}</span></td>
                     <td class="action-links">
                         ${renderDownloadButtons(o.id, o.file_name)}
-                        ${o.status === 'pending' ? `<button class="btn btn-primary" onclick="updateStatus('${o.id}', 'printed')">Mark Printed</button>` : ''}
-                        ${o.status === 'printed' ? `<button class="btn btn-secondary" style="background:#64748b" onclick="updateStatus('${o.id}', 'archived')">Archive</button>` : ''}
+                        ${currentAdminTab === 'active' && o.status === 'pending' ? `<button class="btn btn-primary" onclick="updateStatus('${o.id}', 'printed')">Mark Printed</button>` : ''}
+                        ${currentAdminTab === 'active' && o.status === 'printed' ? `<button class="btn btn-secondary" style="background:#64748b" onclick="updateStatus('${o.id}', 'archived')">Archive</button>` : ''}
                     </td>
                 </tr>
             `).join('');
