@@ -74,11 +74,27 @@ window.fetchOrders = async () => {
                     <small>${o.copies}x ${o.paper_size} (${o.color_mode})</small>
                 </td>
                 <td>${new Date(o.created_at).toLocaleDateString()}</td>
-                <td><span class="badge badge-${o.status}">${o.status}</span></td>
+                <td>
+                    <span class="badge badge-${o.status}" style="display:inline-block; margin-bottom:4px;">${o.status}</span><br>
+                    <button class="btn btn-secondary" style="padding:2px 8px; font-size:0.75rem; border-color:#ef4444; color:#ef4444;" onclick="deleteClientHistory('${o.id}')">Delete</button>
+                </td>
             </tr>
         `).join('');
     } catch (err) {
         tbody.innerHTML = '<tr><td colspan="4" class="status-error text-center">Failed to load orders</td></tr>';
+    }
+};
+
+window.deleteClientHistory = async (historyId) => {
+    if (!confirm('Are you sure you want to remove this record from your history?')) return;
+    try {
+        const res = await fetch(`${API_BASE_URL}/client/orders/${historyId}`, {
+            method: 'DELETE'
+        });
+        if (!res.ok) throw new Error('Failed to delete history item');
+        window.fetchOrders();
+    } catch (error) {
+        alert(error.message);
     }
 };
 

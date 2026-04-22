@@ -255,6 +255,19 @@ def list_client_orders(
         return session.exec(statement).all()
     return []
 
+@app.delete("/api/client/orders/{history_id}")
+def delete_client_history(
+    history_id: uuid.UUID,
+    session: Session = Depends(get_session)
+):
+    history = session.get(PrintHistory, history_id)
+    if not history:
+        raise HTTPException(status_code=404, detail="History record not found")
+        
+    session.delete(history)
+    session.commit()
+    return {"message": "History deleted successfully"}
+
 @app.api_route("/health", methods=["GET", "HEAD"])
 def health_check():
     """Lightweight endpoint to keep the server alive on Render."""
