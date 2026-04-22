@@ -58,11 +58,19 @@ window.fetchOrders = async () => {
             return;
         }
         
+        const renderFileName = (nameStr) => {
+            try {
+                const names = JSON.parse(nameStr);
+                if (Array.isArray(names)) return names.join('<br>');
+            } catch(e) {}
+            return nameStr;
+        };
+        
         tbody.innerHTML = orders.map(o => `
             <tr>
                 <td>${o.client_name}</td>
                 <td>
-                    ${o.file_name}<br>
+                    ${renderFileName(o.file_name)}<br>
                     <small>${o.copies}x ${o.paper_size} (${o.color_mode})</small>
                 </td>
                 <td>${new Date(o.created_at).toLocaleDateString()}</td>
@@ -84,12 +92,19 @@ if (uploadForm) {
         
         const submitBtn = document.getElementById('submit-btn');
         const fileInput = document.getElementById('file_upload');
-        const file = fileInput.files[0];
-        if (!file) return;
-
-        if (file.size > 50 * 1024 * 1024) {
-            showStatus('status-message', 'File exceeds maximum allowed size (50MB).', true);
+        const files = Array.from(fileInput.files);
+        
+        if (files.length === 0) return;
+        if (files.length > 5) {
+            showStatus('status-message', 'Maximum 5 files allowed per order.', true);
             return;
+        }
+
+        for (const file of files) {
+            if (file.size > 50 * 1024 * 1024) {
+                showStatus('status-message', `File "${file.name}" exceeds maximum allowed size (50MB).`, true);
+                return;
+            }
         }
 
         submitBtn.disabled = true;
@@ -98,37 +113,50 @@ if (uploadForm) {
         try {
             showStatus('status-message', 'Configuring upload...', false);
             
-            const presignedRes = await fetch(`${API_BASE_URL}/upload/presigned`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ filename: file.name })
-            });
-            
-            if (!presignedRes.ok) throw new Error('Failed to get upload authorization');
-            const presignedData = await presignedRes.json();
-            const { url, method, content_type, filename: fileKey } = presignedData;
-
-            showStatus('status-message', 'Uploading file securely...', false);
             const progressContainer = document.getElementById('progress-container');
             const progressFill = document.getElementById('progress-fill');
             const progressText = document.getElementById('progress-text');
             progressContainer.classList.remove('hidden');
+            
+            let uploadedFilesCount = 0;
+            const fileKeys = [];
+            const fileNames = [];
 
-            await new Promise((resolve, reject) => {
-                const xhr = new XMLHttpRequest();
-                xhr.open(method || 'PUT', url, true);
-                if (content_type) xhr.setRequestHeader('Content-Type', content_type);
-                xhr.upload.onprogress = (evt) => {
-                    if (evt.lengthComputable) {
-                        const percent = Math.round((evt.loaded / evt.total) * 100);
-                        progressFill.style.width = `${percent}%`;
-                        progressText.textContent = `Uploading: ${percent}%`;
-                    }
-                };
-                xhr.onload = () => xhr.status >= 200 && xhr.status < 300 ? resolve() : reject(new Error('Upload failed.'));
-                xhr.onerror = () => reject(new Error('Network error.'));
-                xhr.send(file);
-            });
+            // We upload files sequentially to ensure the progress bar makes sense and avoid rate limit / bandwidth issues
+            for (const file of files) {
+                const presignedRes = await fetch(`${API_BASE_URL}/upload/presigned`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ filename: file.name })
+                });
+                
+                if (!presignedRes.ok) throw new Error(`Failed to get upload authorization for ${file.name}`);
+                const presignedData = await presignedRes.json();
+                const { url, method, content_type, filename: fileKey } = presignedData;
+    
+                showStatus('status-message', `Uploading ${file.name}...`, false);
+    
+                await new Promise((resolve, reject) => {
+                    const xhr = new XMLHttpRequest();
+                    xhr.open(method || 'PUT', url, true);
+                    if (content_type) xhr.setRequestHeader('Content-Type', content_type);
+                    xhr.upload.onprogress = (evt) => {
+                        if (evt.lengthComputable) {
+                            const filePercent = (evt.loaded / evt.total);
+                            const overallPercent = Math.round(((uploadedFilesCount + filePercent) / files.length) * 100);
+                            progressFill.style.width = `${overallPercent}%`;
+                            progressText.textContent = `Uploading: ${overallPercent}% (${uploadedFilesCount + 1}/${files.length})`;
+                        }
+                    };
+                    xhr.onload = () => xhr.status >= 200 && xhr.status < 300 ? resolve() : reject(new Error(`Upload failed for ${file.name}`));
+                    xhr.onerror = () => reject(new Error('Network error.'));
+                    xhr.send(file);
+                });
+                
+                fileKeys.push(fileKey);
+                fileNames.push(file.name);
+                uploadedFilesCount++;
+            }
 
             progressContainer.classList.add('hidden');
             showStatus('status-message', 'Finalizing order...', false);
@@ -140,8 +168,8 @@ if (uploadForm) {
                 copies: parseInt(document.getElementById('copies').value),
                 color_mode: document.querySelector('input[name="color_mode"]:checked').value,
                 paper_size: document.getElementById('paper_size').value,
-                file_key: fileKey,
-                file_name: file.name
+                file_key: JSON.stringify(fileKeys),
+                file_name: JSON.stringify(fileNames)
             };
 
             const orderRes = await fetch(`${API_BASE_URL}/orders`, {
@@ -198,6 +226,24 @@ window.initAdminDashboard = async () => {
                 return;
             }
 
+            const renderFileName = (nameStr) => {
+                try {
+                    const names = JSON.parse(nameStr);
+                    if (Array.isArray(names)) return names.join('<br>');
+                } catch(e) {}
+                return nameStr;
+            };
+    
+            const renderDownloadButtons = (id, nameStr) => {
+                try {
+                    const names = JSON.parse(nameStr);
+                    if (Array.isArray(names) && names.length > 1) {
+                        return names.map((n, i) => `<button class="btn btn-secondary btn-sm" onclick="downloadSingleFile('${id}', ${i})" style="margin-right: 4px; margin-bottom: 4px;">DL ${i+1}</button>`).join('');
+                    }
+                } catch(e) {}
+                return `<button class="btn btn-secondary" onclick="downloadSingleFile('${id}', 0)">Download</button>`;
+            };
+
             tbody.innerHTML = orders.map(o => `
                 <tr>
                     <td><strong>${o.client_name}</strong></td>
@@ -209,10 +255,10 @@ window.initAdminDashboard = async () => {
                         ${o.copies}x ${o.paper_size}<br>
                         <small style="text-transform:uppercase">${o.color_mode}</small>
                     </td>
-                    <td>${o.file_name}</td>
+                    <td>${renderFileName(o.file_name)}</td>
                     <td><span class="badge badge-${o.status}">${o.status}</span></td>
                     <td class="action-links">
-                        <button class="btn btn-secondary" onclick="downloadFile('${o.id}')">Download</button>
+                        ${renderDownloadButtons(o.id, o.file_name)}
                         ${o.status === 'pending' ? `<button class="btn btn-primary" onclick="updateStatus('${o.id}', 'printed')">Mark Printed</button>` : ''}
                         ${o.status === 'printed' ? `<button class="btn btn-secondary" style="background:#64748b" onclick="updateStatus('${o.id}', 'archived')">Archive</button>` : ''}
                     </td>
@@ -223,12 +269,16 @@ window.initAdminDashboard = async () => {
         }
     };
 
-    window.downloadFile = async (id) => {
+    window.downloadSingleFile = async (id, idx) => {
         try {
             const res = await fetch(`${API_BASE_URL}/admin/orders/${id}/download`);
             if (!res.ok) throw new Error('Failed to get download URL');
             const data = await res.json();
-            window.open(data.url, '_blank');
+            if (data.urls && data.urls.length > idx) {
+                window.location.href = data.urls[idx];
+            } else if (data.url) {
+                window.location.href = data.url;
+            }
         } catch (error) { alert(error.message); }
     };
 

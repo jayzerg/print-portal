@@ -88,7 +88,12 @@ def create_order(
         session.commit()
         session.refresh(order)
         
-        dl_url = generate_download_url(order.file_key)
+        try:
+            import json
+            keys = json.loads(order.file_key)
+            dl_url = "Multiple files uploaded. View in Admin Dashboard."
+        except:
+            dl_url = generate_download_url(order.file_key)
         
         # Dispatch notification
         background_tasks.add_task(notify_admin, order.model_dump(), dl_url)
@@ -135,8 +140,16 @@ def get_download_link(
         raise HTTPException(status_code=404, detail="Order not found")
         
     try:
-        url = generate_download_url(order.file_key)
-        return {"url": url}
+        import json
+        try:
+            keys = json.loads(order.file_key)
+            if not isinstance(keys, list):
+                keys = [order.file_key]
+        except:
+            keys = [order.file_key]
+            
+        urls = [generate_download_url(k) for k in keys]
+        return {"urls": urls, "url": urls[0] if urls else None}
     except Exception as e:
         raise HTTPException(status_code=500, detail="Could not generate download link")
 
