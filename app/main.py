@@ -129,6 +129,24 @@ def update_order_status(
     session.refresh(order)
     return order
 
+@app.delete("/api/admin/orders/clear")
+def clear_orders(
+    tab: str = Query("active"),
+    session: Session = Depends(get_session),
+    admin: str = Depends(verify_admin)
+):
+    from sqlmodel import delete
+    if tab == "active":
+        statement = delete(Order).where(Order.status != "archived")
+    elif tab == "archived":
+        statement = delete(Order).where(Order.status == "archived")
+    else:
+        statement = delete(Order)
+        
+    session.exec(statement)
+    session.commit()
+    return {"message": f"Cleared {tab} orders"}
+
 @app.get("/api/admin/orders/{order_id}/download")
 def get_download_link(
     order_id: uuid.UUID,

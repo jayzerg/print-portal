@@ -245,6 +245,38 @@ window.initAdminDashboard = async () => {
         fetchAdminOrders();
     };
 
+    window.clearAllOrders = async () => {
+        if (!confirm(`Are you sure you want to permanently delete all ${currentAdminTab} orders? This cannot be undone.`)) {
+            return;
+        }
+        
+        try {
+            const response = await fetch(`${API_BASE_URL}/admin/orders/clear?tab=${currentAdminTab}`, {
+                method: 'DELETE'
+            });
+            
+            if (!response.ok) throw new Error(`Failed to clear ${currentAdminTab} orders`);
+            
+            const adminStatus = document.getElementById('admin-status');
+            if (adminStatus) {
+                adminStatus.innerHTML = `✅ Successfully cleared all <strong>${currentAdminTab}</strong> orders.`;
+                adminStatus.className = 'status-message status-success';
+                adminStatus.classList.remove('hidden');
+                setTimeout(() => adminStatus.classList.add('hidden'), 4000);
+            }
+            
+            fetchAdminOrders();
+        } catch (error) {
+            const adminStatus = document.getElementById('admin-status');
+            if (adminStatus) {
+                adminStatus.textContent = error.message;
+                adminStatus.className = 'status-message status-error';
+                adminStatus.classList.remove('hidden');
+                setTimeout(() => adminStatus.classList.add('hidden'), 4000);
+            }
+        }
+    };
+
     const tbody = document.getElementById('orders-tbody');
     
     const fetchAdminOrders = async (isPolling = false) => {
