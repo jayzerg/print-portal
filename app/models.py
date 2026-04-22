@@ -26,6 +26,21 @@ class Order(SQLModel, table=True):
     status: str = Field(default="pending") # "pending", "printed", "archived"
     created_at: datetime = Field(default_factory=get_utc_now)
 
+class PrintHistory(SQLModel, table=True):
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    order_id: uuid.UUID = Field(index=True)
+    client_id: Optional[uuid.UUID] = Field(default=None, foreign_key="clientuser.id")
+    client_name: str
+    contact_email: str
+    contact_phone: Optional[str] = None
+    copies: int = Field(default=1)
+    color_mode: str
+    paper_size: str
+    file_key: str
+    file_name: str
+    status: str = Field(default="pending")
+    created_at: datetime = Field(default_factory=get_utc_now)
+
 class OrderCreate(SQLModel):
     client_name: str
     contact_email: str

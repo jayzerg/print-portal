@@ -12,7 +12,7 @@ from pydantic import BaseModel
 
 from .config import settings
 from .database import engine, get_session, create_db_and_tables
-from .models import Order, OrderCreate, OrderUpdate, ClientUser
+from .models import Order, OrderCreate, OrderUpdate, ClientUser, PrintHistory
 from .storage import generate_presigned_post, generate_download_url
 from .auth import get_password_hash, verify_password, create_access_token, get_current_client, get_optional_client, ACCESS_TOKEN_EXPIRE_MINUTES
 from fastapi.security import OAuth2PasswordRequestForm
@@ -88,6 +88,24 @@ def create_order(
         session.commit()
         session.refresh(order)
         
+        # Log to immutable client history
+        history = PrintHistory(
+            order_id=order.id,
+            client_id=order.client_id,
+            client_name=order.client_name,
+            contact_email=order.contact_email,
+            contact_phone=order.contact_phone,
+            copies=order.copies,
+            color_mode=order.color_mode,
+            paper_size=order.paper_size,
+            file_key=order.file_key,
+            file_name=order.file_name,
+            status=order.status,
+            created_at=order.created_at
+        )
+        session.add(history)
+        session.commit()
+        
         try:
             import json
             keys = json.loads(order.file_key)
@@ -125,6 +143,13 @@ def update_order_status(
         
     order.status = update_data.status
     session.add(order)
+    
+    # Mirror status update to the client history tracking record if it exists
+    history = session.exec(select(PrintHistory).where(PrintHistory.order_id == order_id)).first()
+    if history:
+        history.status = update_data.status
+        session.add(history)
+        
     session.commit()
     session.refresh(order)
     return order
@@ -216,17 +241,17 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), session: Session = D
     access_token = create_access_token(data={"sub": user.username})
     return {"access_token": access_token, "token_type": "bearer"}
 
-@app.get("/api/client/orders", response_model=List[Order])
+@app.get("/api/client/orders")
 def list_client_orders(
     order_ids: List[uuid.UUID] = Query(default=[]),
     client: Optional[ClientUser] = Depends(get_optional_client), 
     session: Session = Depends(get_session)
 ):
     if client:
-        statement = select(Order).where(Order.client_id == client.id).order_by(Order.created_at.desc())
+        statement = select(PrintHistory).where(PrintHistory.client_id == client.id).order_by(PrintHistory.created_at.desc())
         return session.exec(statement).all()
     elif order_ids:
-        statement = select(Order).where(Order.id.in_(order_ids)).order_by(Order.created_at.desc())
+        statement = select(PrintHistory).where(PrintHistory.order_id.in_(order_ids)).order_by(PrintHistory.created_at.desc())
         return session.exec(statement).all()
     return []
 
